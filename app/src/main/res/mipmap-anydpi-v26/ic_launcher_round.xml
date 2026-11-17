@@ -4,7 +4,7 @@
     <foreground>
         <inset
             android:drawable="@drawable/anilili_launcher"
-            android:inset="14%" />
+            android:inset="7%" />
     </foreground>
     <monochrome android:drawable="@drawable/ic_launcher_foreground" />
 </adaptive-icon>
