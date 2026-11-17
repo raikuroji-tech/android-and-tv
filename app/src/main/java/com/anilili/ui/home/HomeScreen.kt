@@ -758,7 +758,7 @@ private fun GenrePill(label: String, highlighted: Boolean, onClick: () -> Unit, 
         modifier = Modifier
             .focusFill(fillFocus1, shape)
             .clip(shape)
-            .then(if (frosted) Modifier.backdropBlur(backdrop, tint = Color.Black.copy(alpha = .30f)) else Modifier)
+            .then(if (frosted) Modifier.backdropBlur(backdrop, tint = Color.Black.copy(alpha = .30f), shape = shape) else Modifier)
             .background(
                 fillFocus1.background(
                     when {
@@ -1213,7 +1213,7 @@ private fun HeroPill(
     Row(
         modifier
             .clip(RoundedCornerShape(50))
-            .backdropBlur(backdrop, tint = Color.Black.copy(alpha = .22f), radius = 12.dp)
+            .backdropBlur(backdrop, tint = Color.Black.copy(alpha = .22f), radius = 12.dp, shape = RoundedCornerShape(50))
             .background(Color.Black.copy(if (frosted) 0f else .42f))
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,

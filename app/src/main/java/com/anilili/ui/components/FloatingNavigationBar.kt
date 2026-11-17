@@ -98,15 +98,17 @@ private fun barGlass(): Brush {
  * their contrast over a white poster. The tint is the painted glass's own middle colour.
  */
 @Composable
-private fun barBlur(): HazeStyle {
+private fun barBlur(liquid: Boolean = false): HazeStyle {
     val background = Midnight.Bg
     val tint = Midnight.Panel2
-    return remember(background, tint) {
+    return remember(background, tint, liquid) {
         HazeStyle(
             backgroundColor = background,
-            tint = HazeTint(tint.copy(alpha = 0.62f)),
-            blurRadius = 22.dp,
-            noiseFactor = 0.04f,
+            // Liquid glass lets more of the page through and smears it wider into soft colour;
+            // the sheen laid over it (see liquidGlassSheen) keeps the idle icons readable.
+            tint = HazeTint(tint.copy(alpha = if (liquid) 0.44f else 0.62f)),
+            blurRadius = if (liquid) 28.dp else 22.dp,
+            noiseFactor = if (liquid) 0.02f else 0.04f,
         )
     }
 }
@@ -155,6 +157,9 @@ fun FloatingNavigationBar(
         // RenderEffect arrived in Android 12; below it Haze only lays a flat scrim, which is worse
         // than the painted glass, so older phones keep that.
         val blurred = backdrop != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+        // Liquid glass finishes the live blur only: the painted glass below Android 12, or with
+        // Navigation glass switched off, stays as it was.
+        val liquid = blurred && liquidGlassEnabled()
         val inner = maxWidth - BarPadding * 2
         // Idle icons keep a thumb-sized target; whatever they leave is the ceiling on the pill, so
         // a long label ("Calendario") ellipsizes on a narrow phone instead of pushing icons off.
@@ -174,12 +179,14 @@ fun FloatingNavigationBar(
                         // A third of the resolution: the blur discards that detail anyway. On an
                         // S25 it cut the GPU 90th percentile while scrolling from 10ms to 6ms
                         // (painted glass: 4ms) with no visible difference.
-                        Modifier.hazeEffect(backdrop!!, barBlur()) { inputScale = HazeInputScale.Fixed(0.33f) }
+                        Modifier.hazeEffect(backdrop!!, barBlur(liquid)) { inputScale = HazeInputScale.Fixed(0.33f) }
                     } else {
                         Modifier.background(barGlass())
                     },
                 )
-                .border(1.dp, barRim(), BarShape)
+                .then(
+                    if (liquid) Modifier.liquidGlass(BarShape) else Modifier.border(1.dp, barRim(), BarShape),
+                )
                 .padding(horizontal = BarPadding)
                 .selectableGroup(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -191,6 +198,7 @@ fun FloatingNavigationBar(
                     selected = item.route == selectedRoute,
                     width = itemWidth,
                     maxWidth = pillMax,
+                    liquid = liquid,
                     onClick = { onSelect(item.route) },
                 )
             }
@@ -213,6 +221,7 @@ fun FloatingNavDisc(
     icon: @Composable () -> Unit,
 ) {
     val blurred = backdrop != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val liquid = blurred && liquidGlassEnabled()
     Box(
         modifier = modifier
             .size(FloatingNavDiscSize)
@@ -220,12 +229,14 @@ fun FloatingNavDisc(
             .clip(CircleShape)
             .then(
                 if (blurred) {
-                    Modifier.hazeEffect(backdrop!!, barBlur()) { inputScale = HazeInputScale.Fixed(0.33f) }
+                    Modifier.hazeEffect(backdrop!!, barBlur(liquid)) { inputScale = HazeInputScale.Fixed(0.33f) }
                 } else {
                     Modifier.background(barGlass())
                 },
             )
-            .border(1.dp, barRim(), CircleShape)
+            .then(
+                if (liquid) Modifier.liquidGlass(CircleShape) else Modifier.border(1.dp, barRim(), CircleShape),
+            )
             .clickable(onClickLabel = contentDescription, role = Role.Button, onClick = onClick)
             .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center,
@@ -249,10 +260,12 @@ private fun FloatingNavIcon(
     selected: Boolean,
     width: Dp,
     maxWidth: Dp,
+    liquid: Boolean,
     onClick: () -> Unit,
 ) {
     val accent = LocalMidnightAccent.current
-    val idleTint = Midnight.Text2
+    // Brighter at rest under liquid glass: the pane is clearer, so the glyphs need the contrast.
+    val idleTint = if (liquid) Midnight.Text else Midnight.Text2
     val onAccent = Midnight.OnAccent
     val progress = remember { Animatable(if (selected) 1f else 0f) }
     LaunchedEffect(selected) { progress.animateTo(if (selected) 1f else 0f, PillSpring) }
@@ -273,7 +286,10 @@ private fun FloatingNavIcon(
             )
             .padding(vertical = PillInset)
             .clip(PillShape)
-            .drawBehind { drawRect(accent.copy(alpha = accent.alpha * p())) },
+            .drawBehind {
+                drawRect(accent.copy(alpha = accent.alpha * p()))
+                if (liquid) drawLiquidPill(p())
+            },
         content = {
             Icon(
                 imageVector = item.icon,

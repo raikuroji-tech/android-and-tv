@@ -300,7 +300,7 @@ fun CardCornerAction(
             .clip(CircleShape)
             // Frosted, the disc can be lighter and still hold the glyph: the blur already takes
             // the busy detail out from under it, which is what the heavier scrim was there for.
-            .backdropBlur(backdrop, tint = Color.Black.copy(alpha = .30f), radius = 10.dp)
+            .backdropBlur(backdrop, tint = Color.Black.copy(alpha = .30f), radius = 10.dp, shape = CircleShape)
             .background(Color.Black.copy(alpha = if (frosted) 0f else .55f))
             .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,

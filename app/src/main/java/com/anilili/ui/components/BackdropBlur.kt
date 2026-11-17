@@ -6,6 +6,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.ExperimentalHazeApi
@@ -48,9 +49,17 @@ fun glassEnabled(section: GlassSection): Boolean {
  * source the effect itself sits inside, and every screen sits inside the nav capsule's source in
  * MainActivity — so a genre pill blurring the Home feed drew nothing at all, not even its tint.
  * Each state here holds only the one source it was made for, so there is no parent to filter out.
+ *
+ * Pass the caller's own clip as [shape] to let Appearance's liquid glass finish the pane — a
+ * specular rim and sheen over the blur. Left null, the pane is exactly the frosted glass it was.
  */
 @OptIn(ExperimentalHazeApi::class)
-fun Modifier.backdropBlur(state: HazeState?, tint: Color, radius: Dp = 16.dp): Modifier =
+fun Modifier.backdropBlur(
+    state: HazeState?,
+    tint: Color,
+    radius: Dp = 16.dp,
+    shape: Shape? = null,
+): Modifier =
     if (state == null || !backdropBlurAvailable) {
         this
     } else {
@@ -65,5 +74,5 @@ fun Modifier.backdropBlur(state: HazeState?, tint: Color, radius: Dp = 16.dp): M
         ) {
             inputScale = HazeInputScale.Fixed(0.33f)
             canDrawArea = { true }
-        }
+        }.liquidGlassIfOn(shape)
     }

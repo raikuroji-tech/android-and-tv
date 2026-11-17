@@ -1,6 +1,8 @@
 package com.anilili.ui.dialogs
 
 import com.anilili.ui.theme.appCanvas
+import com.anilili.ui.components.liquidGlass
+import com.anilili.ui.components.liquidGlassEnabled
 import android.os.Build
 import android.view.WindowManager
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -261,6 +263,7 @@ fun MidnightSheet(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val backdrop = rememberPopupBackdrop()
+    val liquid = liquidGlassEnabled()
     val statusBarTop = WindowInsets.safeDrawing.getTop(LocalDensity.current)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -302,7 +305,12 @@ fun MidnightSheet(
                 )
                 .then(
                     if (backdrop != null) {
-                        Modifier.popupGlass(backdrop).background(Midnight.SheetSurface.copy(alpha = GLASS_PANEL_ALPHA))
+                        Modifier
+                            .popupGlass(backdrop)
+                            .background(
+                                Midnight.SheetSurface.copy(alpha = if (liquid) LIQUID_PANEL_ALPHA else GLASS_PANEL_ALPHA),
+                            )
+                            .then(if (liquid) Modifier.liquidGlass(LiquidSheetShape, topLit = true) else Modifier)
                     } else {
                         Modifier
                     },
@@ -390,6 +398,7 @@ fun MidnightModal(
     ) {
         CoverScreenWithDialogWindow()
         val backdrop = rememberPopupBackdrop()
+        val liquid = liquidGlassEnabled()
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
@@ -411,8 +420,22 @@ fun MidnightModal(
                     .width(width)
                     .clip(shape)
                     .popupGlass(backdrop)
-                    .background(if (backdrop != null) Midnight.ModalSurface.copy(alpha = GLASS_PANEL_ALPHA) else Midnight.ModalSurface)
-                    .border(1.dp, Midnight.Line2, shape)
+                    .background(
+                        if (backdrop != null) {
+                            Midnight.ModalSurface.copy(alpha = if (liquid) LIQUID_PANEL_ALPHA else GLASS_PANEL_ALPHA)
+                        } else {
+                            Midnight.ModalSurface
+                        },
+                    )
+                    // Liquid glass only where there is glass to finish: without a backdrop the
+                    // panel is a plain surface and keeps its plain hairline.
+                    .then(
+                        if (backdrop != null && liquid) {
+                            Modifier.liquidGlass(shape)
+                        } else {
+                            Modifier.border(1.dp, Midnight.Line2, shape)
+                        },
+                    )
                     .padding(18.dp),
                 content = content,
             )
@@ -451,6 +474,12 @@ fun MidnightPage(
 
 /** A frosted popup panel's wash: enough to read on, low enough for the glass to come through. */
 private const val GLASS_PANEL_ALPHA = .72f
+
+/** The same wash under liquid glass: lighter, because the sheen and rim now do part of the work. */
+private const val LIQUID_PANEL_ALPHA = .60f
+
+/** The sheet's own top corners, so the liquid rim follows them. See [MidnightSheet]. */
+private val LiquidSheetShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
 
 /**
  * Makes the current dialog's window cover the screen exactly, leaving the system bars to the

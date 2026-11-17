@@ -1010,6 +1010,14 @@ object SettingsStore {
     val glass: Map<GlassSection, StateFlow<Boolean>> = _glass.mapValues { it.value.asStateFlow() }
 
     /**
+     * Liquid glass: the glass above drawn glossier — bright specular rims, a soft sheen, a clearer
+     * blur. A style over [glass], not a replacement for it, so a part with its glass switched off
+     * stays flat. Off by default: the look people already have is unchanged until they ask.
+     */
+    private val _liquidGlass = MutableStateFlow(false)
+    val liquidGlass = _liquidGlass.asStateFlow()
+
+    /**
      * Search answers each keystroke: title suggestions from the bundled snapshot, then a live
      * search that rebuilds the results grid. On by default. Off, typing does no work at all and the
      * search runs once on the keyboard's search key — for a Fire TV Stick class box, where that
@@ -1430,6 +1438,7 @@ object SettingsStore {
         scope.launch { store.edit { it[DIAGNOSTIC_DETAIL] = value.storedValue } }
     }
     fun setStaticAppChrome(value: Boolean) = save(STATIC_APP_CHROME, value, _staticAppChrome)
+    fun setLiquidGlass(value: Boolean) = save(LIQUID_GLASS, value, _liquidGlass)
     fun setGlass(section: GlassSection, value: Boolean) =
         save(GLASS_KEYS.getValue(section), value, _glass.getValue(section))
 
@@ -2079,6 +2088,7 @@ object SettingsStore {
         }
         _staticAppChrome.value = prefs[STATIC_APP_CHROME] ?: false
         GlassSection.entries.forEach { _glass.getValue(it).value = prefs[GLASS_KEYS.getValue(it)] ?: true }
+        _liquidGlass.value = prefs[LIQUID_GLASS] ?: false
         _searchAsYouType.value = prefs[SEARCH_AS_YOU_TYPE] ?: true
         _videoLaunchIntro.value = prefs[VIDEO_LAUNCH_INTRO] ?: true
         _appIconMatchesTheme.value = prefs[APP_ICON_MATCHES_THEME] ?: true
@@ -2245,6 +2255,7 @@ object SettingsStore {
     private val DIAGNOSTIC_DETAIL = stringPreferencesKey("diagnostic_detail")
     private val STATIC_APP_CHROME = booleanPreferencesKey("static_app_chrome")
     private val GLASS_KEYS = GlassSection.entries.associateWith { booleanPreferencesKey("glass_${it.name.lowercase()}") }
+    private val LIQUID_GLASS = booleanPreferencesKey("liquid_glass")
     private val SEARCH_AS_YOU_TYPE = booleanPreferencesKey("search_as_you_type")
     private val VIDEO_LAUNCH_INTRO = booleanPreferencesKey("video_launch_intro")
     private val APP_ICON_MATCHES_THEME = booleanPreferencesKey("app_icon_matches_theme")
@@ -2392,6 +2403,7 @@ object SettingsStore {
         PLAYER_STATUS_BAR,
         PLAYER_CLOCK,
         TV_DOUBLE_BACK_TO_EXIT,
+        LIQUID_GLASS,
     ) + GLASS_KEYS.values
 
     private val BACKUP_INT_KEYS = listOf(

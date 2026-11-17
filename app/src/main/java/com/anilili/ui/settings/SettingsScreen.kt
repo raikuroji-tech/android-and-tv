@@ -2883,7 +2883,19 @@ fun SettingsScreen(
                 // glass, so there would be nothing here to switch.
                 if (!device.isTv && backdropBlurAvailable) {
                     item(key = "Liquid glass") {
-                        MidnightSectionLabel("Liquid glass", Modifier.padding(start = 14.dp))
+                        MidnightSectionLabel("Glass", Modifier.padding(start = 14.dp))
+                    }
+                    // A style over the parts below rather than one more part: it finishes whatever
+                    // glass is on, and leaves a part with its glass off exactly as flat as it was.
+                    item(key = "Liquid glass style") {
+                        val liquid by SettingsStore.liquidGlass.collectAsState()
+                        MidnightSettingSwitchRow(
+                            title = "Liquid glass",
+                            description = "A glossier finish for the glass below: bright edge light, a " +
+                                "soft sheen and a clearer blur. Parts with glass off stay flat",
+                            checked = liquid,
+                            onCheckedChange = SettingsStore::setLiquidGlass,
+                        )
                     }
                     // One switch over the lot, for someone who wants none of it and would otherwise
                     // flip six rows. On only while every part is on, so a single part turned off
