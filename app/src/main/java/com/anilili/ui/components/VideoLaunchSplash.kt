@@ -80,9 +80,11 @@ fun VideoLaunchSplash(
     onFinished: () -> Unit,
     @RawRes introResource: Int,
     modifier: Modifier = Modifier,
+    onFirstFrame: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val latestOnFinished by rememberUpdatedState(onFinished)
+    val latestOnFirstFrame by rememberUpdatedState(onFirstFrame)
     val startedAt = remember { SystemClock.elapsedRealtime() }
     // Set by whichever way out comes first; the rest are ignored.
     var finishing by remember { mutableStateOf(false) }
@@ -109,11 +111,13 @@ fun VideoLaunchSplash(
             override fun onRenderedFirstFrame() {
                 DiagnosticsLog.event("Launch intro first frame after ${SystemClock.elapsedRealtime() - startedAt}ms")
                 player.play()
+                latestOnFirstFrame()
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
                 if (playbackState == Player.STATE_ENDED) {
                     DiagnosticsLog.event("Launch intro ended after ${SystemClock.elapsedRealtime() - startedAt}ms")
+                    finish()
                 }
             }
 
@@ -137,6 +141,9 @@ fun VideoLaunchSplash(
             finish()
             return@LaunchedEffect
         }
+        // Safety net: never leave a stalled clip on screen.
+        delay(4_000L)
+        finish()
     }
     BoxWithConstraints(
         modifier
