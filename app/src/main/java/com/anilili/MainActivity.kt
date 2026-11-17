@@ -159,6 +159,7 @@ import com.anilili.data.settings.SettingsStore
 import com.anilili.data.update.UpdateManager
 import com.anilili.diagnostics.CrashReportDialog
 import com.anilili.diagnostics.CrashReporter
+import com.anilili.diagnostics.DiagnosticsDisclosureHost
 import com.anilili.diagnostics.DiagnosticsJankMonitor
 import com.anilili.diagnostics.DiagnosticsLog
 import com.anilili.diagnostics.chromiumRestartIsFatal
@@ -323,20 +324,17 @@ class MainActivity : FragmentActivity() {
                         color = MaterialTheme.colorScheme.background,
                     ) {
                         var showLaunchSplash by rememberSaveable { mutableStateOf(true) }
-                        // True once the intro clip has drawn its first frame. From then on the clip
-                        // ends the splash itself, so a slow cold start can't cut it off mid-way.
-                        var introVideoPlaying by remember { mutableStateOf(false) }
                         val launchSplashState = remember { MutableTransitionState(showLaunchSplash) }
                         launchSplashState.targetState = showLaunchSplash
                         LaunchedEffect(appReadyAfterMillis) {
                             val readyAfter = appReadyAfterMillis ?: return@LaunchedEffect
                             val exitAt = launchIntroExitStartMillis(readyAfter)
                             delay((exitAt - (SystemClock.elapsedRealtime() - launchStartedAt)).coerceAtLeast(0L))
-                            if (!introVideoPlaying) showLaunchSplash = false
+                            showLaunchSplash = false
                         }
                         LaunchedEffect(Unit) {
                             delay(LaunchIntroMaximumTotalMillis - VideoLaunchSplashExitMillis)
-                            if (!introVideoPlaying) showLaunchSplash = false
+                            showLaunchSplash = false
                         }
                         // "Who's watching?" waits until the splash has finished leaving, not just
                         // started to: its dialog window draws above the activity, so opening it on
@@ -357,6 +355,7 @@ class MainActivity : FragmentActivity() {
                             AllAnimeCaptchaHost()
                             CloudflareChallengeHost()
                             AnnouncementHost()
+                            DiagnosticsDisclosureHost()
                             var crashReport by remember { mutableStateOf(CrashReporter.pendingReport()) }
                             crashReport?.let { report ->
                                 CrashReportDialog(
@@ -415,7 +414,6 @@ class MainActivity : FragmentActivity() {
                                     true -> VideoLaunchSplash(
                                         onFinished = { showLaunchSplash = false },
                                         introResource = introResource,
-                                        onFirstFrame = { introVideoPlaying = true },
                                     )
                                     false -> AppLaunchSplash(onFinished = { showLaunchSplash = false })
                                 }
@@ -1001,7 +999,7 @@ private fun MiruroRoot(
             Scaffold(
                 containerColor = canvasColor(),
             ) { innerPadding ->
-                val showTvTopNavigation = deviceProfile.isTv && !cinema &&
+                val showTvTopNavigation = !chromeTakeover.active && deviceProfile.isTv && !cinema &&
                     (showBottomBar || currentRoute == Routes.DETAIL)
                 // The canvas is painted inside the capsule's blur source, so the glass frosts the
                 // background picture too rather than showing it sharp through a tint.
@@ -1013,7 +1011,8 @@ private fun MiruroRoot(
                                 bottom = if (hasPhoneBottomBar) 0.dp else innerPadding.calculateBottomPadding(),
                             ),
                     ) {
-                        if (showPhoneNavigation && (deviceProfile.useNavigationRail && !deviceProfile.isTv ||
+                        if (!chromeTakeover.active && showPhoneNavigation &&
+                            (deviceProfile.useNavigationRail && !deviceProfile.isTv ||
                                 deviceProfile.isTv && cinema)) {
                             AppNavigationRail(
                                 currentRoute = currentRoute,
@@ -1779,6 +1778,12 @@ private fun AppNavigationRail(
                     )
                     .focusFill(railFocus)
                     .background(railFocus.background(ComposeColor.Transparent), RoundedCornerShape(12.dp)),
+            )
+        }
+        if (cinema) {
+            Spacer(Modifier.weight(1f))
+            com.anilili.ui.profiles.ProfileSwitchButton(
+                modifier = Modifier.padding(bottom = 16.dp),
             )
         }
     }
