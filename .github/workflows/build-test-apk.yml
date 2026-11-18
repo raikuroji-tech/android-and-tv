@@ -8,6 +8,8 @@ permissions:
 
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8
+  ANILIST_CLIENT_ID: ${{ secrets.ANILIST_CLIENT_ID }}
+  MAL_CLIENT_ID: ${{ secrets.MAL_CLIENT_ID }}
 
 jobs:
   build:
@@ -46,4 +48,4 @@ jobs:
         with:
           name: Anilife-release-apk
           path: app/build/outputs/apk/mobile/release/*.apk
-          retention-days: 14
+          retention-days: 1
