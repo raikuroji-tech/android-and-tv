@@ -106,9 +106,9 @@ private fun barBlur(liquid: Boolean = false): HazeStyle {
             backgroundColor = background,
             // Liquid glass lets more of the page through and smears it wider into soft colour;
             // the sheen laid over it (see liquidGlassSheen) keeps the idle icons readable.
-            tint = HazeTint(tint.copy(alpha = if (liquid) 0.44f else 0.62f)),
+            tint = HazeTint(tint.copy(alpha = if (liquid) 0.58f else 0.62f)),
             blurRadius = if (liquid) 28.dp else 22.dp,
-            noiseFactor = if (liquid) 0.02f else 0.04f,
+            noiseFactor = if (liquid) 0.03f else 0.04f,
         )
     }
 }

@@ -1,12 +1,15 @@
 package com.anilili.ui.components
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -173,7 +176,7 @@ fun Modifier.liquidGlassIfOn(shape: Shape?): Modifier =
  * of light along the bottom, and a fine rim. [progress] is the pill's own open/closed value, so
  * all of it grows in and out with the pill instead of popping.
  */
-internal fun DrawScope.drawLiquidPill(progress: Float) {
+internal fun DrawScope.drawLiquidPill(progress: Float, rim: Boolean = true) {
     val w = size.width
     val h = size.height
     if (w <= 0f || h <= 0f || progress <= 0f) return
@@ -202,6 +205,9 @@ internal fun DrawScope.drawLiquidPill(progress: Float) {
         size = Size(w, pool),
     )
 
+    // A pill rounds to half its height; anything with other corners draws its own rim instead.
+    if (!rim) return
+
     val stroke = 1.dp.toPx()
     drawRoundRect(
         Brush.verticalGradient(
@@ -212,6 +218,44 @@ internal fun DrawScope.drawLiquidPill(progress: Float) {
         size = Size(w - stroke, h - stroke),
         cornerRadius = CornerRadius(h / 2f),
         style = Stroke(stroke),
+    )
+}
+
+/** [block] applied when [on], untouched otherwise: reads better than an if/else in a chain. */
+fun Modifier.applyIf(on: Boolean, block: Modifier.() -> Modifier): Modifier =
+    if (on) this.block() else this
+
+/**
+ * Gloss over a filled, accent-coloured control (a selected chip, a primary button). Clip to the
+ * control's shape first, or the bloom's square corners show.
+ */
+fun Modifier.liquidGloss(strength: Float = 0.6f): Modifier = drawWithContent {
+    drawContent()
+    drawLiquidPill(strength, rim = false)
+}
+
+/**
+ * A filter chip finished as glass: clear body with sheen and rim, and a gloss over the fill when it
+ * is selected.
+ */
+fun Modifier.liquidGlassChip(shape: Shape, selected: Boolean): Modifier =
+    clip(shape)
+        .liquidGlassSheen()
+        .applyIf(selected) { liquidGloss(0.5f) }
+        .liquidGlassRim(shape)
+
+/** A bright sheen along the top half of a thin bar, so a progress fill reads as a glass tube. */
+fun Modifier.liquidProgressGloss(): Modifier = clip(RoundedCornerShape(50)).drawWithContent {
+    drawContent()
+    val h = size.height * 0.55f
+    drawRect(
+        Brush.verticalGradient(
+            0.00f to Color.White.copy(alpha = 0.45f),
+            1.00f to Clear,
+            startY = 0f,
+            endY = h,
+        ),
+        size = Size(size.width, h),
     )
 }
 

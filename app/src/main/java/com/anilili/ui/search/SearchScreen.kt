@@ -148,6 +148,12 @@ import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import com.anilili.ui.components.PageMenuSectionLabel
+import com.anilili.ui.components.applyIf
+import com.anilili.ui.components.liquidGlass
+import com.anilili.ui.components.liquidGlassChip
+import com.anilili.ui.components.liquidGlassEnabled
+import com.anilili.ui.components.liquidGlassRim
+import com.anilili.ui.components.liquidGloss
 import com.anilili.ui.dialogs.MidnightSectionLabel
 import com.anilili.ui.dialogs.MidnightSettingSwitchRow
 import com.anilili.ui.dialogs.MidnightSettingRow
@@ -451,6 +457,7 @@ private fun SearchTopBar(
     translucent: Boolean = false,
 ) {
     val device = LocalAppDeviceProfile.current
+    val liquid = liquidGlassEnabled()
     val keyboard = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val filterFocusRequester = remember { FocusRequester() }
@@ -562,6 +569,9 @@ private fun SearchTopBar(
                                     .onFocusChanged {
                                         if (fieldFocused && !it.isFocused) vm.commitTypedQuery()
                                         fieldFocused = it.isFocused
+                                    }
+                                    .applyIf(liquid) {
+                                        clip(RoundedCornerShape(28.dp)).liquidGlass(RoundedCornerShape(28.dp))
                                     },
                                 placeholder = { Text("Search anime…") },
                                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
@@ -574,7 +584,7 @@ private fun SearchTopBar(
                                         }
                                     }
                                 },
-                                shape = RoundedCornerShape(10.dp),
+                                shape = if (liquid) RoundedCornerShape(28.dp) else RoundedCornerShape(10.dp),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                                 keyboardActions = KeyboardActions(onSearch = {
@@ -582,10 +592,20 @@ private fun SearchTopBar(
                                     keyboard?.hide()
                                     focusManager.moveFocus(FocusDirection.Down)
                                 }),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                                ),
+                                colors = if (liquid) {
+                                    // The glass rim is the outline at rest; the accent one still
+                                    // takes over while the field has focus.
+                                    OutlinedTextFieldDefaults.colors(
+                                        focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                                        unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                                        unfocusedBorderColor = Color.Transparent,
+                                    )
+                                } else {
+                                    OutlinedTextFieldDefaults.colors(
+                                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    )
+                                },
                             )
                         }
                         val controlFocus1 = rememberFocusFill()
@@ -596,8 +616,13 @@ private fun SearchTopBar(
                             modifier = Modifier
                                 .focusRequester(filterFocusRequester)
                                 .height(56.dp)
-                                .focusFill(controlFocus1, RoundedCornerShape(50)),
-                            shape = RoundedCornerShape(10.dp),
+                                .focusFill(controlFocus1, RoundedCornerShape(50))
+                                .applyIf(liquid) {
+                                    clip(RoundedCornerShape(28.dp))
+                                        .liquidGloss(0.7f)
+                                        .liquidGlassRim(RoundedCornerShape(28.dp))
+                                },
+                            shape = if (liquid) RoundedCornerShape(28.dp) else RoundedCornerShape(10.dp),
                         ) {
                             Icon(Icons.Default.FilterList, contentDescription = "Open filters")
                             if (vm.filters.activeCount > 0) {
@@ -657,7 +682,11 @@ private fun SearchTopBar(
                                 leadingIcon = {
                                     Icon(Icons.Default.WbSunny, contentDescription = null, modifier = Modifier.size(16.dp))
                                 },
-                                modifier = Modifier.focusFill(extraFocusSeason, RoundedCornerShape(8.dp)),
+                                modifier = Modifier
+                                    .focusFill(extraFocusSeason, RoundedCornerShape(8.dp))
+                                    .applyIf(liquid) {
+                                        liquidGlassChip(RoundedCornerShape(8.dp), vm.filters.season != null)
+                                    },
                             )
                         }
                         item(key = "format-movie") {
@@ -666,7 +695,13 @@ private fun SearchTopBar(
                                 colors = extraFocus3.chipColors(FilterChipDefaults.filterChipColors()),
                                 selected = vm.filters.format == "MOVIE",
                                 onClick = { vm.setFormat(if (vm.filters.format == "MOVIE") null else "MOVIE") },
-                                label = { Text("Movies") }, modifier = Modifier.focusFill(extraFocus3, RoundedCornerShape(8.dp)),)
+                                label = { Text("Movies") },
+                                modifier = Modifier
+                                    .focusFill(extraFocus3, RoundedCornerShape(8.dp))
+                                    .applyIf(liquid) {
+                                        liquidGlassChip(RoundedCornerShape(8.dp), vm.filters.format == "MOVIE")
+                                    },
+                            )
                         }
                         items(options.genres.take(14), key = { it }) { genre ->
                             val extraFocus4 = rememberFocusFill()
@@ -674,7 +709,13 @@ private fun SearchTopBar(
                                 colors = extraFocus4.chipColors(FilterChipDefaults.filterChipColors()),
                                 selected = genre in vm.filters.genres,
                                 onClick = { vm.toggleGenre(genre) },
-                                label = { Text(genre) }, modifier = Modifier.focusFill(extraFocus4, RoundedCornerShape(8.dp)),)
+                                label = { Text(genre) },
+                                modifier = Modifier
+                                    .focusFill(extraFocus4, RoundedCornerShape(8.dp))
+                                    .applyIf(liquid) {
+                                        liquidGlassChip(RoundedCornerShape(8.dp), genre in vm.filters.genres)
+                                    },
+                            )
                         }
                     }
                     ActiveFilterRow(vm = vm)

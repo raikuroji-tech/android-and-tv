@@ -119,6 +119,10 @@ import com.anilili.ui.components.PageSearch
 import com.anilili.ui.components.PageSortControl
 import com.anilili.ui.components.PageTitleBar
 import com.anilili.ui.components.WatchProgressBar
+import com.anilili.ui.components.applyIf
+import com.anilili.ui.components.liquidGlass
+import com.anilili.ui.components.liquidGlassEnabled
+import com.anilili.ui.components.liquidProgressGloss
 import com.anilili.ui.components.episodeWatchFraction
 import com.anilili.ui.components.formatPlaybackPosition
 import com.anilili.ui.dialogs.MidnightConfirmDialog
@@ -318,12 +322,34 @@ fun DownloadsScreen(
 
         if (allSeries.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    "Nothing downloaded yet. Save an episode from its watch page to keep it here.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 32.dp),
-                )
+                val liquid = liquidGlassEnabled()
+                val emptyShape = RoundedCornerShape(24.dp)
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 32.dp)
+                        .applyIf(liquid) {
+                            clip(emptyShape)
+                                .liquidGlass(emptyShape)
+                                .padding(horizontal = 24.dp, vertical = 28.dp)
+                        },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    if (liquid) {
+                        Icon(
+                            Icons.Default.Download,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(36.dp),
+                        )
+                    }
+                    Text(
+                        "Nothing downloaded yet. Save an episode from its watch page to keep it here.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    )
+                }
             }
             return@Column
         }
@@ -833,17 +859,19 @@ private fun EpisodeRow(
         else -> "Play offline"
     }
     val shape = RoundedCornerShape(12.dp)
+    val liquid = liquidGlassEnabled()
     // Only true when the card itself holds focus, never when one of its buttons does — see the
     // modifier chain below for why the distinction decides whether a remote can press them at all.
     var cardFocused by remember { mutableStateOf(false) }
     Card(
         shape = shape,
         colors = CardDefaults.cardColors(
-            containerColor = if (selected) {
+            // Under liquid glass the fill thins out so the sheen laid behind it shows through.
+            containerColor = (if (selected) {
                 MaterialTheme.colorScheme.primaryContainer
             } else {
                 MaterialTheme.colorScheme.surfaceVariant
-            },
+            }).let { fill -> if (liquid) fill.copy(alpha = if (selected) 0.75f else 0.45f) else fill },
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -861,6 +889,7 @@ private fun EpisodeRow(
                 enabled = cardFocused,
             )
             .clip(shape)
+            .applyIf(liquid) { liquidGlass(shape) }
             .combinedClickable(
                 onClickLabel = clickLabel,
                 onLongClickLabel = "Select episodes",
@@ -919,7 +948,7 @@ private fun EpisodeRow(
                 if (episode.isDownloading) {
                     LinearProgressIndicator(
                         progress = { (download?.percent ?: 0f) / 100f },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().applyIf(liquid) { liquidProgressGloss() },
                     )
                 }
                 // Only for an episode left partway: a finished one already says so in words, and a

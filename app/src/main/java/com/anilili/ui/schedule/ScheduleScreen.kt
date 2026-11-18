@@ -83,6 +83,11 @@ import com.anilili.ui.components.LoadingBox
 import com.anilili.ui.components.LocalAppChromeBottomInset
 import com.anilili.ui.components.LocalTimeOfDayFormatter
 import com.anilili.ui.components.PageTitleBar
+import com.anilili.ui.components.applyIf
+import com.anilili.ui.components.liquidGlass
+import com.anilili.ui.components.liquidGlassEnabled
+import com.anilili.ui.components.liquidGlassRim
+import com.anilili.ui.components.liquidGloss
 import com.anilili.ui.components.PullRefreshContainer
 import com.anilili.ui.components.ScrollAwareTopBar
 import com.anilili.ui.home.TvCentredScrollSpec
@@ -367,6 +372,7 @@ private fun EmptyDayNotice() {
 @Composable
 private fun DayTabs(today: LocalDate, selected: LocalDate, onSelect: (LocalDate) -> Unit) {
     val device = LocalAppDeviceProfile.current
+    val liquid = liquidGlassEnabled()
     val listState = rememberLazyListState()
     val selectedIndex = (ChronoUnit.DAYS.between(today, selected) - DAY_STRIP_FIRST).toInt()
     // Coming back from the month on one of the last days the strip carries leaves the selected
@@ -403,10 +409,17 @@ private fun DayTabs(today: LocalDate, selected: LocalDate, onSelect: (LocalDate)
                         fillFocus1.background(if (active) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.surface),
                     )
+                    .applyIf(liquid) {
+                        liquidGlass(RoundedCornerShape(14.dp)).applyIf(active) { liquidGloss(0.6f) }
+                    }
                     .border(
                         width = 1.dp,
-                        color = fillFocus1.content(if (active) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.outline),
+                        color = if (liquid) {
+                            Color.Transparent
+                        } else {
+                            fillFocus1.content(if (active) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.outline)
+                        },
                         shape = RoundedCornerShape(14.dp),
                     )
                     .clickable { onSelect(date) }
@@ -458,6 +471,7 @@ private fun DayStepper(
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
+    val liquid = liquidGlassEnabled()
     val onToday = selected == today
     Surface(
         modifier = modifier,
@@ -468,7 +482,13 @@ private fun DayStepper(
         tonalElevation = 0.dp,
     ) {
         Row(
-            Modifier.fillMaxWidth().height(DayStepperHeight).padding(horizontal = 6.dp),
+            Modifier
+                .fillMaxWidth()
+                .height(DayStepperHeight)
+                // Inside the Surface, which already clips to the capsule, so the gloss needs no clip
+                // of its own and the Surface's shadow is left alone.
+                .applyIf(liquid) { liquidGloss(0.5f).liquidGlassRim(RoundedCornerShape(28.dp)) }
+                .padding(horizontal = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val dayStepFocus1 = rememberFocusFill()
@@ -586,6 +606,7 @@ private fun TimeSlot(
     val device = LocalAppDeviceProfile.current
     val lineColor = MaterialTheme.colorScheme.outline
     val canvasColor = MaterialTheme.colorScheme.background
+    val liquid = liquidGlassEnabled()
     val dotColor = if (airingAt * 1000L > System.currentTimeMillis()) {
         MaterialTheme.colorScheme.primary
     } else {
@@ -597,6 +618,7 @@ private fun TimeSlot(
             .drawBehind {
                 val x = device.pagePadding.toPx() + 8.dp.toPx()
                 drawLine(lineColor, Offset(x, 0f), Offset(x, size.height), 1.dp.toPx())
+                if (liquid) drawCircle(dotColor.copy(alpha = 0.30f), 10.dp.toPx(), Offset(x, 20.dp.toPx()))
                 drawCircle(dotColor, 5.dp.toPx(), Offset(x, 20.dp.toPx()))
                 drawCircle(
                     color = canvasColor,
@@ -638,6 +660,7 @@ private fun ScheduleCard(
     val media = item.media ?: return
     val device = LocalAppDeviceProfile.current
     val upcoming = item.airingAt * 1000L > System.currentTimeMillis()
+    val liquid = liquidGlassEnabled()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -645,7 +668,12 @@ private fun ScheduleCard(
             .focusHighlight(RoundedCornerShape(14.dp))
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(14.dp))
+            .applyIf(liquid) { liquidGlass(RoundedCornerShape(14.dp)) }
+            .border(
+                1.dp,
+                if (liquid) Color.Transparent else MaterialTheme.colorScheme.outline,
+                RoundedCornerShape(14.dp),
+            )
             .clickable { onAnimeClick(media.id) }
             .padding(10.dp),
         verticalAlignment = Alignment.CenterVertically,

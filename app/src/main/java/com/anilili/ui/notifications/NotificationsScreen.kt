@@ -77,6 +77,10 @@ import com.anilili.ui.adaptive.tvFocusTarget
 import com.anilili.ui.components.ErrorBox
 import com.anilili.ui.components.LoadingBox
 import com.anilili.ui.components.ScrollAwareTopBar
+import com.anilili.ui.components.applyIf
+import com.anilili.ui.components.liquidGlass
+import com.anilili.ui.components.liquidGlassChip
+import com.anilili.ui.components.liquidGlassEnabled
 import com.anilili.ui.rethrowIfCancellation
 import java.time.Instant
 import java.time.ZoneId
@@ -144,6 +148,7 @@ fun NotificationsScreen(
     vm: NotificationsViewModel = viewModel(),
 ) {
     val device = LocalAppDeviceProfile.current
+    val liquid = liquidGlassEnabled()
     val token by AuthManager.token.collectAsState()
     val state by vm.state.collectAsState()
     val unreadCount by vm.unreadCount.collectAsState()
@@ -174,7 +179,10 @@ fun NotificationsScreen(
                                 Key.DirectionDown,
                                 tvContentFocusTarget.takeIf { device.isTv },
                             )
-                            .focusFill(controlFocus1, RoundedCornerShape(24.dp)),
+                            .focusFill(controlFocus1, RoundedCornerShape(24.dp))
+                            .applyIf(liquid) {
+                                clip(RoundedCornerShape(24.dp)).liquidGlass(RoundedCornerShape(24.dp))
+                            },
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
@@ -189,7 +197,10 @@ fun NotificationsScreen(
                                 Key.DirectionDown,
                                 tvContentFocusTarget.takeIf { device.isTv },
                             )
-                            .focusFill(controlFocus2, RoundedCornerShape(24.dp)),
+                            .focusFill(controlFocus2, RoundedCornerShape(24.dp))
+                            .applyIf(liquid) {
+                                clip(RoundedCornerShape(24.dp)).liquidGlass(RoundedCornerShape(24.dp))
+                            },
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
@@ -203,7 +214,10 @@ fun NotificationsScreen(
                                 Key.DirectionDown,
                                 tvContentFocusTarget.takeIf { device.isTv },
                             )
-                            .focusFill(controlFocus3, RoundedCornerShape(20.dp)),
+                            .focusFill(controlFocus3, RoundedCornerShape(20.dp))
+                            .applyIf(liquid) {
+                                clip(RoundedCornerShape(20.dp)).liquidGlass(RoundedCornerShape(20.dp))
+                            },
                     ) {
                         Text("Mark all read")
                     }
@@ -262,6 +276,7 @@ private fun NotificationList(
     backFocusRequester: FocusRequester,
     tvContentFocusTarget: TvFocusTarget,
 ) {
+    val liquid = liquidGlassEnabled()
     val filtered = items.filter(tab::matches)
     val now = System.currentTimeMillis() / 1000
     val sections = filtered.groupBy { item ->
@@ -311,7 +326,9 @@ private fun NotificationList(
                         selected = tab == entry,
                         onClick = { onTab(entry) },
                         label = { Text(if (unreadTotal > 0) "${entry.label}  $count" else entry.label) },
-                        modifier = Modifier.focusFill(controlFocus4, RoundedCornerShape(8.dp)),
+                        modifier = Modifier
+                            .focusFill(controlFocus4, RoundedCornerShape(8.dp))
+                            .applyIf(liquid) { liquidGlassChip(RoundedCornerShape(8.dp), tab == entry) },
                     )
                 }
             }
@@ -449,13 +466,18 @@ private fun NotificationCard(
     compactTv: Boolean = false,
 ) {
     val isTv = LocalAppDeviceProfile.current.isTv
+    val liquid = liquidGlassEnabled()
     val shape = RoundedCornerShape(14.dp)
     Box(
         Modifier
             .fillMaxWidth()
             .focusHighlight(shape)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surface)
+            .background(
+                if (liquid) MaterialTheme.colorScheme.surface.copy(alpha = 0.55f) else MaterialTheme.colorScheme.surface,
+            )
+            // Unread keeps its accent line underneath; the glass rim and sheen sit over it.
+            .applyIf(liquid) { liquidGlass(shape) }
             .border(
                 width = if (item.unread) 1.5.dp else 1.dp,
                 color = when {
@@ -464,6 +486,8 @@ private fun NotificationCard(
                     // a page of focused ones. A lighter grey than a read card's still tells them apart.
                     item.unread && isTv -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     item.unread -> MaterialTheme.colorScheme.primary
+                    // A read card's hairline gives way to the glass rim when that is on.
+                    liquid -> androidx.compose.ui.graphics.Color.Transparent
                     else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
                 },
                 shape = shape,
@@ -482,7 +506,7 @@ private fun NotificationCard(
                 model = banner,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                alpha = 0.18f,
+                alpha = if (liquid) 0.30f else 0.18f,
                 modifier = Modifier.matchParentSize(),
             )
         }

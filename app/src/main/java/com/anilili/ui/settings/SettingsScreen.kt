@@ -2891,8 +2891,8 @@ fun SettingsScreen(
                         val liquid by SettingsStore.liquidGlass.collectAsState()
                         MidnightSettingSwitchRow(
                             title = "Liquid glass",
-                            description = "A glossier finish for the glass below: bright edge light, a " +
-                                "soft sheen and a clearer blur. Parts with glass off stay flat",
+                            description = "A glossier finish across the app: bright edge light, a soft " +
+                                "sheen and a clearer blur. Glass parts switched off below stay flat",
                             checked = liquid,
                             onCheckedChange = SettingsStore::setLiquidGlass,
                         )
